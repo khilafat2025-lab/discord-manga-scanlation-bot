@@ -6,6 +6,7 @@ Main entry point — loads all cogs, sets up logging, connects to Discord.
 Environment variables required:
   DISCORD_TOKEN   — your bot token from Discord Developer Portal
   OWNER_IDS       — comma-separated Discord user IDs of bot owners
+  GOOGLE_API_KEY  — AI Studio key (aistudio.google.com) for Gemini OCR/Translation/Image Gen
   OPENAI_API_KEY  — (optional) for GPT-powered translation fallback
   LOG_CHANNEL_ID  — (optional) Discord channel ID for audit logs
 """
@@ -80,6 +81,7 @@ class MangaBot(commands.Bot):
             "cogs.manga_ocr",
             "cogs.colorizer",
             "cogs.file_translator",
+            "cogs.image_gen",
             "cogs.admin",
             "cogs.help",
         ]

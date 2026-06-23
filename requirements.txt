@@ -9,10 +9,14 @@ aiosqlite>=0.19.0
 python-dotenv>=1.0.0
 
 # ── Translation ───────────────────────────────────────────────────────────────
+# Primary: Google Gemini API (uses GOOGLE_API_KEY — pure REST, no SDK needed)
+# Fallback: googletrans (free), OpenAI, MyMemory
 googletrans==4.0.0rc1
 httpx>=0.25.0
 
 # ── OCR ───────────────────────────────────────────────────────────────────────
+# Primary: Google Gemini Vision (uses GOOGLE_API_KEY — pure REST, no SDK needed)
+# Fallback: EasyOCR (local), pytesseract (local)
 easyocr>=1.7.0
 pytesseract>=0.3.10
 Pillow>=10.0.0
@@ -23,3 +27,7 @@ numpy>=1.24.0
 
 # ── Async utilities ───────────────────────────────────────────────────────────
 asyncio-throttle>=1.0.2
+
+# ── NOTE: No Google Cloud SDK needed! ────────────────────────────────────────
+# All Google APIs (Gemini, Vision, Translate) are called via pure REST + httpx.
+# Just set GOOGLE_API_KEY from https://aistudio.google.com/apikey

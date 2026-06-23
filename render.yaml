@@ -1,0 +1,30 @@
+services:
+  - type: worker
+    name: discord-manga-scanlation-bot
+    runtime: python
+    buildCommand: |
+      apt-get update && apt-get install -y tesseract-ocr tesseract-ocr-jpn tesseract-ocr-chi-sim libgl1-mesa-glx libglib2.0-0 libgomp1
+      pip install -r requirements.txt
+    startCommand: python bot.py
+    plan: free
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false          # ← fill this in Render dashboard
+      - key: OWNER_IDS
+        sync: false          # ← your Telegram user ID
+      - key: OPENAI_API_KEY
+        sync: false          # ← optional, for GPT translation fallback
+      - key: DEEPL_API_KEY
+        sync: false          # ← optional
+      - key: LOG_CHANNEL_ID
+        sync: false          # ← optional
+      - key: OCR_COOLDOWN_SECONDS
+        value: "10"
+      - key: TRANSLATE_COOLDOWN_SECONDS
+        value: "5"
+      - key: COLORIZE_COOLDOWN_SECONDS
+        value: "30"
+      - key: MAX_FILE_SIZE_MB
+        value: "10"
+      - key: PYTHON_VERSION
+        value: "3.11.0"

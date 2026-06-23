@@ -1,0 +1,25 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt"
+  },
+  "deploy": {
+    "startCommand": "python bot.py",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "DISCORD_TOKEN": "FILL_IN_RAILWAY_DASHBOARD",
+        "OWNER_IDS": "FILL_IN_RAILWAY_DASHBOARD",
+        "OPENAI_API_KEY": "FILL_IN_RAILWAY_DASHBOARD",
+        "OCR_COOLDOWN_SECONDS": "10",
+        "TRANSLATE_COOLDOWN_SECONDS": "5",
+        "COLORIZE_COOLDOWN_SECONDS": "30",
+        "MAX_FILE_SIZE_MB": "10"
+      }
+    }
+  }
+}

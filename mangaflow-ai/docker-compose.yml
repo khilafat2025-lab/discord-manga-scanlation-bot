@@ -1,0 +1,124 @@
+version: "3.9"
+
+services:
+  # PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: mangaflow_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mangaflow
+      POSTGRES_USER: mangaflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mangaflow_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mangaflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: mangaflow_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mangaflow_api
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mangaflow:${POSTGRES_PASSWORD:-mangaflow_secret}@postgres:5432/mangaflow
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - manga_temp:/tmp/mangaflow
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+  # Celery Worker
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mangaflow_worker
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://mangaflow:${POSTGRES_PASSWORD:-mangaflow_secret}@postgres:5432/mangaflow
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - manga_temp:/tmp/mangaflow
+    command: >
+      celery -A app.tasks.translation_tasks.celery_app worker
+      --loglevel=info
+      --queues=manga_processing
+      --concurrency=2
+      --max-tasks-per-child=10
+
+  # Celery Flower (Queue Monitor)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mangaflow_flower
+    restart: unless-stopped
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/1
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    command: >
+      celery -A app.tasks.translation_tasks.celery_app flower
+      --port=5555
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mangaflow_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  manga_temp:

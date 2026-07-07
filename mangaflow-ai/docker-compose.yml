@@ -1,11 +1,9 @@
 version: "3.9"
 
 services:
-  # PostgreSQL
   postgres:
     image: postgres:16-alpine
     container_name: mangaflow_postgres
-    restart: unless-stopped
     environment:
       POSTGRES_DB: mangaflow
       POSTGRES_USER: mangaflow
@@ -20,11 +18,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis
   redis:
     image: redis:7-alpine
     container_name: mangaflow_redis
-    restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
@@ -36,19 +32,20 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI Backend
-  api:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: mangaflow_api
-    restart: unless-stopped
+    container_name: mangaflow_backend
     env_file: ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://mangaflow:${POSTGRES_PASSWORD:-mangaflow_secret}@postgres:5432/mangaflow
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      - uploads:/tmp/mangaflow/uploads
+      - processed:/tmp/mangaflow/processed
     ports:
       - "8000:8000"
     depends_on:
@@ -56,69 +53,73 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - manga_temp:/tmp/mangaflow
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    restart: unless-stopped
 
-  # Celery Worker
-  worker:
+  celery_worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: mangaflow_worker
-    restart: unless-stopped
+    container_name: mangaflow_celery
+    command: celery -A app.tasks.translation_tasks.celery_app worker --loglevel=info --concurrency=2
     env_file: ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://mangaflow:${POSTGRES_PASSWORD:-mangaflow_secret}@postgres:5432/mangaflow
+      DATABASE_URL: postgresql://mangaflow:${POSTGRES_PASSWORD:-mangaflow_secret}@postgres:5432/mangaflow
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      - uploads:/tmp/mangaflow/uploads
+      - processed:/tmp/mangaflow/processed
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - manga_temp:/tmp/mangaflow
-    command: >
-      celery -A app.tasks.translation_tasks.celery_app worker
-      --loglevel=info
-      --queues=manga_processing
-      --concurrency=2
-      --max-tasks-per-child=10
+    restart: unless-stopped
 
-  # Celery Flower (Queue Monitor)
   flower:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: mangaflow_flower
-    restart: unless-stopped
+    command: celery -A app.tasks.translation_tasks.celery_app flower --port=5555
+    env_file: ./backend/.env
     environment:
-      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/0
     ports:
       - "5555:5555"
     depends_on:
       - redis
-    command: >
-      celery -A app.tasks.translation_tasks.celery_app flower
-      --port=5555
+    restart: unless-stopped
 
-  # Next.js Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: mangaflow_frontend
-    restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://api:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_WS_URL: ws://localhost:8000
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      - backend
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: mangaflow_nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
-  manga_temp:
+  uploads:
+  processed:

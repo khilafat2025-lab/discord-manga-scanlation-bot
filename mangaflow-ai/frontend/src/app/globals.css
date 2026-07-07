@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --border: 0 0% 14%;
+    --primary: 271 91% 65%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * { @apply border-white/10; }
+  body { @apply bg-[#0a0a0f] text-white; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-white/5; }
+  ::-webkit-scrollbar-thumb { @apply bg-white/20 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-white/30; }
+}
+
+@layer components {
+  .glass { @apply bg-white/5 backdrop-blur-xl border border-white/10; }
+  .glass-dark { @apply bg-black/40 backdrop-blur-xl border border-white/10; }
+  .glow-pink { box-shadow: 0 0 20px rgba(255, 45, 120, 0.3); }
+  .glow-purple { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+  .manga-card { @apply glass rounded-2xl p-6 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-lg; }
+  .btn-primary { @apply bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:from-pink-400 hover:to-purple-500 hover:shadow-lg hover:shadow-purple-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-secondary { @apply glass text-white font-medium px-6 py-3 rounded-xl hover:bg-white/10 transition-all duration-200 active:scale-95; }
+  .badge-queued { @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30; }
+  .badge-processing { @apply bg-blue-500/20 text-blue-400 border border-blue-500/30; }
+  .badge-completed { @apply bg-green-500/20 text-green-400 border border-green-500/30; }
+  .badge-failed { @apply bg-red-500/20 text-red-400 border border-red-500/30; }
+  .manga-bg { background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 40px 40px; }
+  .shimmer { background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.05) 50%, transparent 100%); background-size: 200% 100%; animation: shimmer 2s linear infinite; }
+  .log-terminal { @apply bg-black/60 rounded-xl border border-white/10 font-mono text-sm overflow-y-auto max-h-64 p-4 space-y-1; }
+}
+
+.page-enter { animation: fadeIn 0.3s ease-out; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  "0%" { backgroundPosition: "-200% 0"; }
+  "100%" { backgroundPosition: "200% 0"; }
+}
+
+.drop-zone-active { @apply border-pink-500 bg-pink-500/10; box-shadow: 0 0 30px rgba(255, 45, 120, 0.2); }

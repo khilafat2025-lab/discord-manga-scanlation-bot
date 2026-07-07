@@ -1,137 +1,110 @@
-# 🎌 MangaFlow AI — AI Manga & Comic Translator
+# 🎌 MangaFlow AI
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python)](https://python.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)](https://postgresql.org)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis)](https://redis.io)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker)](https://docker.com)
+> AI-powered Manga & Comic Translator — Upload PDF/EPUB, get fully translated output with original artwork preserved.
 
-**Production-ready AI-powered manga and comic translation SaaS platform.**
-
----
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://python.org)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com)
 
 ## ✨ Features
 
-### 🔄 Complete Translation Pipeline
-- **Upload** PDF or EPUB manga/comics (up to 2GB)
-- **Auto-extract** every page with PyMuPDF / ebooklib
-- **Detect speech bubbles** using OpenCV contour analysis
-- **OCR** with MangaOCR (Japanese) + PaddleOCR (multilingual)
-- **AI Translation** via OpenAI GPT-4o or Google Gemini 1.5 Pro
-- **Context memory** — consistent character names across all pages
-- **Text removal** + AI inpainting to clean original text
-- **Typesetting** — insert translated text back into bubbles
-- **Export** as PDF, EPUB, or ZIP of images
+- 📄 **Upload PDF & EPUB** manga/comics (up to 2GB)
+- 🔍 **AI Speech Bubble Detection** (OpenCV multi-strategy)
+- 📝 **OCR** — MangaOCR (Japanese) + PaddleOCR (Chinese/Korean) + Tesseract (fallback)
+- 🌐 **AI Translation** — GPT-4o + Gemini + LibreTranslate fallback
+- 🎨 **Inpainting** — Remove original text, reconstruct background
+- ✍️ **Typesetting** — Insert translated text with auto-sizing
+- 📦 **Export** — PDF, EPUB, or ZIP
+- 🔄 **Real-time Progress** — WebSocket live logs
+- ✏️ **Bubble Editor** — Click any bubble to edit translation
+- 👤 **Auth** — Google, GitHub, Email, Guest mode
+- 💰 **Pricing** — Free (20 pages/day) + Premium (unlimited)
+- 🛡️ **Admin Panel** — User management, queue monitoring, analytics
 
-### 🌍 100+ Languages
-Japanese, Chinese, Korean, English, Spanish, French, German, Italian, Portuguese, Russian, Arabic, Hindi, Urdu, Turkish, Thai, Vietnamese, Indonesian, and 80+ more.
+## 🏗️ Tech Stack
 
-### 🎨 Beautiful UI
-- Anime-inspired dark theme with glassmorphism
-- Real-time progress tracking with live logs
-- WebSocket-powered live updates
-- Mobile-first responsive design
-- Translation editor — click any bubble to edit
-
-### 🔐 Authentication
-- Google OAuth, GitHub OAuth, Email/Password, Guest mode
-
-### 👑 Admin Panel
-- User management, Queue monitoring, Revenue analytics
-
----
-
-## 🏗️ Architecture
-
-```
-mangaflow-ai/
-├── frontend/                    # Next.js 15 + TypeScript + Tailwind CSS
-│   └── src/
-│       ├── app/(app)/           # Dashboard, Upload, Projects, Editor, Admin
-│       ├── app/auth/            # Login/Register
-│       ├── app/pricing/         # Pricing page
-│       ├── components/          # Reusable components
-│       └── lib/api.ts           # Typed API client
-│
-├── backend/                     # Python FastAPI
-│   └── app/
-│       ├── api/v1/endpoints/    # auth.py, projects.py, admin.py
-│       ├── core/                # config.py, security.py
-│       ├── db/                  # SQLAlchemy async
-│       ├── models/              # ORM models (8 tables)
-│       ├── services/
-│       │   ├── ocr/             # bubble_detector.py, ocr_engine.py
-│       │   ├── translation/     # translator.py (OpenAI + Gemini)
-│       │   ├── pipeline/        # pdf_processor.py, epub_processor.py, inpainter.py
-│       │   └── export/          # exporter.py (PDF/EPUB/ZIP)
-│       ├── tasks/               # translation_tasks.py (Celery)
-│       └── main.py              # FastAPI app entry point
-│
-├── docker-compose.yml           # Full stack (Postgres + Redis + API + Worker + Frontend + Nginx)
-└── backend/.env.example         # Environment variables template
-```
-
----
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15, React, TypeScript, Tailwind CSS |
+| Backend | Python FastAPI |
+| Database | PostgreSQL (8 tables) |
+| Queue | Redis + Celery |
+| Storage | Cloudflare R2 (S3-compatible) |
+| OCR | MangaOCR + PaddleOCR + Tesseract |
+| PDF | PyMuPDF |
+| EPUB | ebooklib |
+| Images | OpenCV + Pillow |
+| AI | OpenAI GPT-4o + Google Gemini |
+| Auth | JWT + OAuth (Google, GitHub) |
+| Proxy | Nginx |
 
 ## 🚀 Quick Start
 
 ```bash
 git clone https://github.com/khilafat2025-lab/discord-manga-scanlation-bot.git
 cd discord-manga-scanlation-bot/mangaflow-ai
-
-# Configure
 cp backend/.env.example backend/.env
-# Edit backend/.env with your API keys
-
-# Start everything
+# Edit .env with your API keys
 docker-compose up -d
 ```
 
-Access at: http://localhost:3000
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API Docs | http://localhost:8000/api/docs |
+| Queue Monitor | http://localhost:5555 |
 
----
-
-## 📡 API Endpoints
+## 📁 Structure
 
 ```
-POST /api/v1/auth/register       # Register
-POST /api/v1/auth/login          # Login
-POST /api/v1/auth/guest          # Guest mode
-GET  /api/v1/auth/google         # Google OAuth
-GET  /api/v1/auth/github         # GitHub OAuth
-
-POST /api/v1/projects/upload     # Upload PDF/EPUB
-GET  /api/v1/projects            # List projects
-GET  /api/v1/projects/{id}/job   # Job status + live logs
-WS   /api/v1/projects/{id}/ws    # WebSocket live progress
-GET  /api/v1/projects/{id}/download/{format}  # Download PDF/EPUB/ZIP
-
-GET  /api/v1/admin/stats         # Platform stats
-GET  /api/v1/admin/queue         # Queue monitor
+mangaflow-ai/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/endpoints/    # auth, projects, admin
+│   │   ├── core/                # config, security
+│   │   ├── db/                  # async PostgreSQL
+│   │   ├── models/              # 8 database tables
+│   │   ├── services/
+│   │   │   ├── ocr/             # bubble_detector, ocr_engine
+│   │   │   ├── translation/     # translator (OpenAI+Gemini)
+│   │   │   ├── pipeline/        # inpainter, pdf/epub processors
+│   │   │   └── storage.py       # Cloudflare R2
+│   │   └── tasks/               # Celery pipeline
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   └── src/app/
+│       ├── auth/login/
+│       ├── dashboard/
+│       ├── upload/
+│       ├── projects/[id]/
+│       ├── admin/
+│       └── pricing/
+├── nginx/nginx.conf
+├── docker-compose.yml
+└── README.md
 ```
 
+## 🗄️ Database Schema (8 Tables)
+
+1. **users** — Auth, roles, usage tracking
+2. **projects** — Uploaded manga files
+3. **translation_jobs** — Celery job tracking + logs
+4. **pages** — Per-page OCR + bubble data
+5. **glossaries** — Character/term consistency
+6. **api_keys** — API access management
+7. **audit_logs** — Security audit trail
+8. **payments** — Stripe subscription data
+
+## 🔄 Pipeline
+
+```
+Upload → Extract Pages → Detect Bubbles → OCR → Translate → Inpaint → Typeset → Export
+```
+
+## 🌍 Languages
+
+Japanese, Chinese, Korean, English, French, German, Spanish, Italian, Portuguese, Russian, Arabic, Turkish, Indonesian, Hindi, Urdu, Bengali, Dutch, Thai, Vietnamese, Persian, and 80+ more.
+
 ---
-
-## 📦 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS, Framer Motion |
-| Backend | Python FastAPI, Uvicorn, SQLAlchemy async |
-| Database | PostgreSQL 16 |
-| Queue | Redis + Celery |
-| OCR | MangaOCR, PaddleOCR |
-| AI | OpenAI GPT-4o, Google Gemini 1.5 Pro |
-| PDF | PyMuPDF (fitz) |
-| EPUB | ebooklib |
-| Images | OpenCV, Pillow |
-| Storage | Cloudflare R2 (S3-compatible) |
-| Auth | JWT + Google/GitHub OAuth |
-| Deploy | Docker Compose + Nginx |
-
----
-
-## 📄 License
-
-MIT License — Built with ❤️ by MangaFlow AI Team
+Built with ❤️ by MangaFlow AI Team

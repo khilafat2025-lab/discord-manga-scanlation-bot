@@ -1,170 +1,122 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Zap, Mail, Lock, Github, Chrome, Eye, EyeOff, UserX } from "lucide-react";
-import { authApi, setAuthTokens } from "@/lib/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { Github, Eye, EyeOff, Zap } from "lucide-react";
+import axios from "axios";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     try {
-      const fn = mode === "login" ? authApi.login : authApi.register;
-      const res = await fn({ email, password });
-      setAuthTokens(res.data.access_token, res.data.refresh_token);
-      toast.success(mode === "login" ? "Welcome back!" : "Account created!");
+      const { data } = await axios.post(`${API_URL}/api/v1/auth/login`, { email, password });
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      toast.success("Welcome back!");
       router.push("/dashboard");
-    } catch {
-      // Error handled by interceptor
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Login failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleGuest = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
-      const res = await authApi.guest();
-      setAuthTokens(res.data.access_token, res.data.refresh_token);
-      toast.success("Continuing as guest (20 pages/day limit)");
+      const { data } = await axios.post(`${API_URL}/api/v1/auth/guest`);
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      toast.success("Continuing as guest");
       router.push("/dashboard");
     } catch {
-      // handled
+      toast.error("Guest login failed");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen anime-bg flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
+    <div className="min-h-screen manga-bg flex items-center justify-center p-4">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+      </div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-accent-cyan flex items-center justify-center mx-auto mb-4 animate-pulse-glow">
-            <Zap className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">MangaFlow AI</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">MangaFlow AI</h1>
-          <p className="text-dark-400 mt-1">AI-powered manga translation</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
+          <p className="text-white/50">Sign in to translate your manga</p>
         </div>
 
-        <div className="glass-card p-8">
-          <div className="flex bg-dark-800 rounded-xl p-1 mb-6">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all capitalize ${
-                  mode === m ? "bg-brand-500 text-white" : "text-dark-400 hover:text-white"
-                }`}
-              >
-                {m === "login" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <a
-              href="/api/v1/auth/google"
-              className="flex items-center justify-center gap-3 w-full py-3 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-xl text-white font-medium transition-all"
-            >
-              <Chrome className="w-5 h-5 text-red-400" />
-              Continue with Google
+        <div className="glass rounded-2xl p-8 space-y-6">
+          <div className="grid grid-cols-2 gap-3">
+            <a href={`${API_URL}/api/v1/auth/google`} className="btn-secondary flex items-center justify-center gap-2 text-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Google
             </a>
-            <a
-              href="/api/v1/auth/github"
-              className="flex items-center justify-center gap-3 w-full py-3 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-xl text-white font-medium transition-all"
-            >
-              <Github className="w-5 h-5" />
-              Continue with GitHub
+            <a href={`${API_URL}/api/v1/auth/github`} className="btn-secondary flex items-center justify-center gap-2 text-sm">
+              <Github className="w-4 h-4" /> GitHub
             </a>
           </div>
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-dark-700" />
-            <span className="text-dark-500 text-sm">or</span>
-            <div className="flex-1 h-px bg-dark-700" />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div>
+            <div className="relative flex justify-center text-xs text-white/40"><span className="bg-[#0f0f1a] px-3">or continue with email</span></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-dark-300 text-sm mb-1.5 block">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full bg-dark-800 border border-dark-600 text-white rounded-xl pl-10 pr-4 py-3 focus:border-brand-500 focus:outline-none placeholder:text-dark-500"
-                />
-              </div>
+              <label className="block text-sm text-white/60 mb-1.5">Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-pink-500/50 transition-all" />
             </div>
             <div>
-              <label className="text-dark-300 text-sm mb-1.5 block">Password</label>
+              <label className="block text-sm text-white/60 mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={8}
-                  className="w-full bg-dark-800 border border-dark-600 text-white rounded-xl pl-10 pr-12 py-3 focus:border-brand-500 focus:outline-none placeholder:text-dark-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
-                >
+                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-pink-500/50 transition-all" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-brand-500 to-accent-cyan text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                mode === "login" ? "Sign In" : "Create Account"
-              )}
-            </button>
+            <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? "Signing in..." : "Sign In"}</button>
           </form>
 
-          <button
-            onClick={handleGuest}
-            disabled={isLoading}
-            className="w-full mt-3 py-3 bg-dark-800 hover:bg-dark-700 border border-dark-600 text-dark-300 hover:text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
-          >
-            <UserX className="w-4 h-4" />
-            Continue as Guest (20 pages/day)
+          <button onClick={handleGuest} disabled={loading} className="w-full text-center text-sm text-white/40 hover:text-white/70 transition-colors py-2">
+            Continue as Guest (20 pages/day free)
           </button>
-        </div>
 
-        <p className="text-center text-dark-400 text-sm mt-6">
-          Need unlimited pages?{" "}
-          <Link href="/pricing" className="text-brand-400 hover:text-brand-300">
-            View pricing →
-          </Link>
-        </p>
+          <p className="text-center text-sm text-white/40">
+            Don&apos;t have an account?{" "}
+            <Link href="/auth/register" className="text-pink-400 hover:text-pink-300">Sign up free</Link>
+          </p>
+        </div>
       </motion.div>
     </div>
   );
